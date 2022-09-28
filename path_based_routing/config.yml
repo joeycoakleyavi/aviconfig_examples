@@ -1,0 +1,111 @@
+avi_config:
+  vsvip:
+  - name: pathrouting-demo-vsvip
+    cloud_ref: /api/cloud?name=LM-Paris
+    tenant_ref: /api/tenant?name=admin
+    vrf_context_ref: /api/vrfcontext?name=T1-Paris
+    tier1_lr: "{{ T1_Paris_Path }}"
+    vip:
+    - auto_allocate_ip: false
+      ip_address:
+        addr: 2.3.4.5
+        type: V4
+
+  virtualservice:
+    - name: pathrouting-demo
+      cloud_ref: /api/cloud?name=LM-Paris
+      se_group_ref: /api/serviceenginegroup?name=SE-ActStby
+      tenant_ref: /api/tenant?name=admin
+      vsvip_ref: /api/vsvip?name=pathrouting-demo-vsvip
+      application_profile_ref: /api/applicationprofile?name=System-Secure-HTTP
+      http_policies:
+      - http_policy_set_ref: /api/httppolicyset?name=pathrouting-demo-http-policy
+      services:
+      - port: 80
+      - port: 443
+        enable_ssl: true
+      ssl_profile_ref: /api/sslprofile?name=System-Standard-PFS
+      ssl_key_and_certificate_refs: /api/sslkeyandcertificate?name=System-Default-Cert
+
+  pool:
+    - name: pathrouting-pool-1
+      cloud_ref: /api/cloud?name=LM-Paris
+      tenant_ref: /api/tenant?name=admin
+      vrf_ref: /api/vrfcontext?name=T1-Paris
+      tier1_lr: "{{ T1_Paris_Path }}"
+      health_monitor_refs:
+      - /api/healthmonitor?name=System-HTTP
+      lb_algorithm: "LB_ALGORITHM_ROUND_ROBIN"
+      servers:
+      - hostname: 10.10.10.10
+        ip:
+          addr: 10.10.10.10
+          type: V4
+    - name: pathrouting-pool-2
+      cloud_ref: /api/cloud?name=LM-Paris
+      tenant_ref: /api/tenant?name=admin
+      vrf_ref: /api/vrfcontext?name=T1-Paris
+      tier1_lr: "{{ T1_Paris_Path }}"
+      health_monitor_refs:
+      - /api/healthmonitor?name=System-HTTP
+      lb_algorithm: "LB_ALGORITHM_ROUND_ROBIN"
+      servers:
+      - hostname: 20.20.20.20
+        ip:
+          addr: 20.20.20.20
+          type: V4
+    - name: pathrouting-pool-3
+      cloud_ref: /api/cloud?name=LM-Paris
+      tenant_ref: /api/tenant?name=admin
+      vrf_ref: /api/vrfcontext?name=T1-Paris
+      tier1_lr: "{{ T1_Paris_Path }}"
+      health_monitor_refs:
+      - /api/healthmonitor?name=System-HTTP
+      lb_algorithm: "LB_ALGORITHM_ROUND_ROBIN"
+      servers:
+      - hostname: 30.30.30.30
+        ip:
+          addr: 30.30.30.30
+          type: V4
+
+  httppolicyset:
+  - name: pathrouting-demo-http-policy
+    tenant_ref: /api/tenant?name=admin
+    http_request_policy:
+      rules:
+      - enable: true
+        index: 1
+        name: rule1
+        match:
+          path:
+            match_case: INSENSITIVE
+            match_criteria: BEGINS_WITH
+            match_str:
+            - "/path1"
+        switching_action:
+          action: "HTTP_SWITCHING_SELECT_POOL"
+          pool_ref: /api/pool?name=pathrouting-pool-1
+      - enable: true
+        index: 2
+        name: rule2
+        match:
+          path:
+            match_case: INSENSITIVE
+            match_criteria: BEGINS_WITH
+            match_str:
+            - "/path2"
+        switching_action:
+          action: "HTTP_SWITCHING_SELECT_POOL"
+          pool_ref: /api/pool?name=pathrouting-pool-2
+      - enable: true
+        index: 3
+        name: rule3
+        match:
+          path:
+            match_case: INSENSITIVE
+            match_criteria: BEGINS_WITH
+            match_str:
+            - "/path3"
+        switching_action:
+          action: "HTTP_SWITCHING_SELECT_POOL"
+          pool_ref: /api/pool?name=pathrouting-pool-3
