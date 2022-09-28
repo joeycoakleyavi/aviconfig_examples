@@ -1,0 +1,104 @@
+avi_config:
+  vsvip:
+  - name: client-ip-demo-vsvip
+    cloud_ref: /api/cloud?name=LM-Paris
+    tenant_ref: /api/tenant?name=admin
+    vrf_context_ref: /api/vrfcontext?name=T1-Paris
+    tier1_lr: "{{ T1_Paris_Path }}"
+    vip:
+    - auto_allocate_ip: false
+      ip_address:
+        addr: 4.5.6.7
+        type: V4
+
+  virtualservice:
+    - name: client-ip-demo
+      cloud_ref: /api/cloud?name=LM-Paris
+      se_group_ref: /api/serviceenginegroup?name=SE-ActStby
+      tenant_ref: /api/tenant?name=admin
+      vsvip_ref: /api/vsvip?name=client-ip-demo-vsvip
+      application_profile_ref: /api/applicationprofile?name=System-Secure-HTTP
+      http_policies:
+      - http_policy_set_ref: /api/httppolicyset?name=client-ip-demo-http-policy
+      services:
+      - port: 80
+      - port: 443
+        enable_ssl: true
+      ssl_profile_ref: /api/sslprofile?name=System-Standard-PFS
+      ssl_key_and_certificate_refs: /api/sslkeyandcertificate?name=System-Default-Cert
+
+  pool:
+    - name: client-ip-pool-1
+      cloud_ref: /api/cloud?name=LM-Paris
+      tenant_ref: /api/tenant?name=admin
+      vrf_ref: /api/vrfcontext?name=T1-Paris
+      tier1_lr: "{{ T1_Paris_Path }}"
+      health_monitor_refs:
+      - /api/healthmonitor?name=System-HTTP
+      lb_algorithm: "LB_ALGORITHM_ROUND_ROBIN"
+      servers:
+      - hostname: 10.10.10.10
+        ip:
+          addr: 10.10.10.10
+          type: V4
+
+  httppolicyset:
+  - name: client-ip-demo-http-policy
+    tenant_ref: /api/tenant?name=admin
+    http_request_policy:
+      rules:
+      - enable: true
+        index: 1
+        name: rule1
+        match:
+          client_ip:
+            match_criteria: IS_IN
+            prefixes:
+            - ip_addr:
+                addr: 10.0.0.0
+                type: V4
+              mask: 24
+            - ip_addr:
+                addr: 10.1.1.0
+                type: V4
+              mask: 24
+        redirect_action:
+          host:
+            tokens:
+            - str_value: www.google.com
+              type: URI_TOKEN_TYPE_STRING
+            type: URI_PARAM_TYPE_TOKENIZED
+          keep_query: false
+          port: 443
+          protocol: HTTPS
+          status_code: HTTP_REDIRECT_STATUS_CODE_301
+      - enable: true
+        index: 2
+        name: rule2
+        match:
+          client_ip:
+            match_criteria: IS_IN
+            prefixes:
+            - ip_addr:
+                addr: 192.168.1.0
+                type: V4
+              mask: 24
+        switching_action:
+          action: HTTP_SWITCHING_SELECT_POOL
+          pool_ref: /api/pool?name=client-ip-pool-1
+    http_security_policy:
+      rules:
+      - action:
+          action: HTTP_SECURITY_ACTION_CLOSE_CONN
+        enable: true
+        name: rule1
+        index: 1
+        match:
+          client_ip:
+            match_criteria: IS_IN
+            prefixes:
+            - ip_addr:
+                addr: 172.16.0.0
+                type: V4
+              mask: 12
+            

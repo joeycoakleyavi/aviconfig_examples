@@ -1,0 +1,14 @@
+- hosts: localhost
+  connection: local
+  collections:
+    - vmware.alb
+  vars_files:
+    - ../vars.yml
+    
+  tasks:
+     - name: Configure Custom Health Monitor Demo
+       import_role:
+         name: aviconfig
+       vars:
+         avi_config_file: config.yml
+         avi_config_state: present
