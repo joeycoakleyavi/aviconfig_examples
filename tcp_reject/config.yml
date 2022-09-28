@@ -1,0 +1,47 @@
+avi_config:
+  vsvip:
+  - name: tcp-reject-demo-vsvip
+    cloud_ref: /api/cloud?name=LM-Paris
+    tenant_ref: /api/tenant?name=admin
+    vrf_context_ref: /api/vrfcontext?name=T1-Paris
+    tier1_lr: "{{ T1_Paris_Path }}"
+    vip:
+    - auto_allocate_ip: false
+      ip_address:
+        addr: 9.8.7.6
+        type: V4
+
+  virtualservice:
+    - name: tcp-reject-demo
+      cloud_ref: /api/cloud?name=LM-Paris
+      se_group_ref: /api/serviceenginegroup?name=SE-ActStby
+      tenant_ref: /api/tenant?name=admin
+      vsvip_ref: /api/vsvip?name=tcp-reject-demo-vsvip
+      application_profile_ref: /api/applicationprofile?name=System-Secure-HTTP
+      network_security_policy_ref: /api/networksecuritypolicy?name=tcp-reject-policy
+      services:
+      - port: 80
+      - port: 443
+        enable_ssl: true
+      ssl_profile_ref: /api/sslprofile?name=System-Standard-PFS
+      ssl_key_and_certificate_refs: /api/sslkeyandcertificate?name=System-Default-Cert
+
+  networksecuritypolicy:
+  - name: tcp-reject-policy
+    tenant_ref: /api/tenant?name=admin
+    rules:
+    - name: rule1
+      action: NETWORK_SECURITY_POLICY_ACTION_TYPE_DENY
+      age: 0
+      enable: true
+      index: 1
+      log: false
+      match:
+        client_ip:
+          match_criteria: IS_IN
+          prefixes:
+          - ip_addr:
+              addr: 10.1.1.0
+              type: V4
+            mask: 24
+      

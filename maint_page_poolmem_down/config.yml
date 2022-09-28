@@ -1,0 +1,48 @@
+avi_config:
+  vsvip:
+  - name: custom-maintenance-pool-demo-vsvip
+    cloud_ref: /api/cloud?name=LM-Paris
+    tenant_ref: /api/tenant?name=admin
+    vrf_context_ref: /api/vrfcontext?name=T1-Paris
+    tier1_lr: "{{ T1_Paris_Path }}"
+    vip:
+    - auto_allocate_ip: false
+      ip_address:
+        addr: 7.6.5.4
+        type: V4
+
+  virtualservice:
+    - name: custom-maintenance-pool-demo
+      cloud_ref: /api/cloud?name=LM-Paris
+      se_group_ref: /api/serviceenginegroup?name=SE-ActStby
+      tenant_ref: /api/tenant?name=admin
+      vsvip_ref: /api/vsvip?name=custom-maintenance-pool-demo-vsvip
+      application_profile_ref: /api/applicationprofile?name=System-Secure-HTTP
+      pool_ref: /api/pool?name=custom-maintenance-pool
+      services:
+      - port: 80
+      - port: 443
+        enable_ssl: true
+      ssl_profile_ref: /api/sslprofile?name=System-Standard-PFS
+      ssl_key_and_certificate_refs: /api/sslkeyandcertificate?name=System-Default-Cert
+
+  pool:
+    - name: custom-maintenance-pool
+      cloud_ref: /api/cloud?name=LM-Paris
+      tenant_ref: /api/tenant?name=admin
+      vrf_ref: /api/vrfcontext?name=T1-Paris
+      tier1_lr: "{{ T1_Paris_Path }}"
+      health_monitor_refs:
+      - /api/healthmonitor?name=System-HTTP
+      lb_algorithm: "LB_ALGORITHM_ROUND_ROBIN"
+      servers:
+      - hostname: 10.10.10.10
+        ip:
+          addr: 10.10.10.10
+          type: V4
+      fail_action:
+        local_rsp:
+          file:
+            content_type: text/html
+            file_content: "{{ lookup('file', './maintenance_page.html') }}"
+        type: FAIL_ACTION_HTTP_LOCAL_RSP

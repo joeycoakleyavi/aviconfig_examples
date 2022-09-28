@@ -1,0 +1,37 @@
+avi_config:
+  vsvip:
+  - name: client-timeout-demo-vsvip
+    cloud_ref: /api/cloud?name=LM-Paris
+    tenant_ref: /api/tenant?name=admin
+    vrf_context_ref: /api/vrfcontext?name=T1-Paris
+    tier1_lr: "{{ T1_Paris_Path }}"
+    vip:
+    - auto_allocate_ip: false
+      ip_address:
+        addr: 8.7.6.5
+        type: V4
+
+  virtualservice:
+    - name: custom-client-timeout-demo
+      cloud_ref: /api/cloud?name=LM-Paris
+      se_group_ref: /api/serviceenginegroup?name=SE-ActStby
+      tenant_ref: /api/tenant?name=admin
+      vsvip_ref: /api/vsvip?name=client-timeout-demo-vsvip
+      application_profile_ref: /api/applicationprofile?name=System-Secure-HTTP
+      network_profile_ref: /api/networkprofile?name=custom-client-timeout
+      services:
+      - port: 80
+      - port: 443
+        enable_ssl: true
+      ssl_profile_ref: /api/sslprofile?name=System-Standard-PFS
+      ssl_key_and_certificate_refs: /api/sslkeyandcertificate?name=System-Default-Cert
+
+  networkprofile:
+  - name: custom-client-timeout
+    profile:
+      tcp_proxy_profile:
+        automatic: false
+        idle_connection_timeout: 3600
+      type: PROTOCOL_TYPE_TCP_PROXY
+    tenant_ref: /api/tenant?name=admin
+
